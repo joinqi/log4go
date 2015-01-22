@@ -133,8 +133,11 @@ func (log Logger) LoadConfiguration(filename string) {
 
 func xmlToConsoleLogWriter(filename string, props []xmlProperty, enabled bool) (*ConsoleLogWriter, bool) {
 	// Parse properties
+	format := "[%D %T] [%L] (%S) %M"
 	for _, prop := range props {
 		switch prop.Name {
+		case "format":
+			format = strings.Trim(prop.Value, " \r\n")
 		default:
 			fmt.Fprintf(os.Stderr, "LoadConfiguration: Warning: Unknown property \"%s\" for console filter in %s\n", prop.Name, filename)
 		}
@@ -144,8 +147,9 @@ func xmlToConsoleLogWriter(filename string, props []xmlProperty, enabled bool) (
 	if !enabled {
 		return nil, true
 	}
-
-	return NewConsoleLogWriter(), true
+	flw := NewConsoleLogWriter()
+	flw.SetFormat(format)
+	return flw, true
 }
 
 // Parse a number with K/M/G suffixes based on thousands (1000) or 2^10 (1024)
