@@ -55,6 +55,7 @@ import (
 )
 
 // Version information
+//版本常量
 const (
 	L4G_VERSION = "log4go-v3.0.1"
 	L4G_MAJOR   = 3
@@ -65,8 +66,10 @@ const (
 /****** Constants ******/
 
 // These are the integer logging levels used by the logger
+// 日志的级别类型
 type Level int
 
+// 日志级别常量
 const (
 	FINEST Level = iota
 	FINE
@@ -79,10 +82,12 @@ const (
 )
 
 // Logging level strings
+//日志级别常量对应的英文代码数组
 var (
 	levelStrings = [...]string{"FNST", "FINE", "DEBG", "TRAC", "INFO", "WARN", "EROR", "CRIT"}
 )
 
+//获取日志常量对应英文代码,如果不在索引范围,则返回"UNKNOWN"
 func (l Level) String() string {
 	if l < 0 || int(l) > len(levelStrings) {
 		return "UNKNOWN"
@@ -94,28 +99,33 @@ func (l Level) String() string {
 var (
 	// LogBufferLength specifies how many log messages a particular log4go
 	// logger can buffer at a time before writing them.
+	// 日志缓冲区长度,默认是32条,达到这个数量后,写于target通道中
 	LogBufferLength = 32
 )
 
 /****** LogRecord ******/
 
 // A LogRecord contains all of the pertinent information for each message
+// 一条日志记录的结构
 type LogRecord struct {
-	Level   Level     // The log level
-	Created time.Time // The time at which the log message was created (nanoseconds)
-	Source  string    // The message source
-	Message string    // The log message
+	Level   Level     // The log level 级别
+	Created time.Time // The time at which the log message was created (nanoseconds) 创建时间
+	Source  string    // The message source 从代码的哪一行引起
+	Message string    // The log message	记录内容
 }
 
 /****** LogWriter ******/
 
 // This is an interface for anything that should be able to write logs
+// 日志记录接口
 type LogWriter interface {
 	// This will be called to log a LogRecord message.
+	//写入日志记录,传入参数为一条日志记录
 	LogWrite(rec *LogRecord)
 
 	// This should clean up anything lingering about the LogWriter, as it is called before
 	// the LogWriter is removed.  LogWrite should not be called after Close.
+	// 关闭日志记录组件
 	Close()
 }
 
@@ -123,6 +133,7 @@ type LogWriter interface {
 
 // A Filter represents the log level below which no log records are written to
 // the associated LogWriter.
+// 过滤器,按照级别过滤
 type Filter struct {
 	Level Level
 	LogWriter
@@ -130,11 +141,13 @@ type Filter struct {
 
 // A Logger represents a collection of Filters through which log messages are
 // written.
+// 日志记录器, map 类型,index为Log名称,值为Filter类型过滤器
 type Logger map[string]*Filter
 
 // Create a new logger.
 //
 // DEPRECATED: Use make(Logger) instead.
+// 创建一个新的logger
 func NewLogger() Logger {
 	os.Stderr.WriteString("warning: use of deprecated NewLogger\n")
 	return make(Logger)
@@ -144,6 +157,7 @@ func NewLogger() Logger {
 // or above lvl to standard output.
 //
 // DEPRECATED: use NewDefaultLogger instead.
+// 创建一个ConsoleLogger
 func NewConsoleLogger(lvl Level) Logger {
 	os.Stderr.WriteString("warning: use of deprecated NewConsoleLogger\n")
 	return Logger{
@@ -153,6 +167,7 @@ func NewConsoleLogger(lvl Level) Logger {
 
 // Create a new logger with a "stdout" filter configured to send log messages at
 // or above lvl to standard output.
+// 创建一个默认的Logger,类型为Console
 func NewDefaultLogger(lvl Level) Logger {
 	return Logger{
 		"stdout": &Filter{lvl, NewConsoleLogWriter()},
@@ -163,6 +178,7 @@ func NewDefaultLogger(lvl Level) Logger {
 // reconfiguration of logging.  Calling this is not really imperative, unless
 // you want to guarantee that all log messages are written.  Close removes
 // all filters (and thus all LogWriters) from the logger.
+// 关闭各过滤器,并从map中删除
 func (log Logger) Close() {
 	// Close all open loggers
 	for name, filt := range log {
@@ -174,6 +190,7 @@ func (log Logger) Close() {
 // Add a new LogWriter to the Logger which will only log messages at lvl or
 // higher.  This function should not be called from multiple goroutines.
 // Returns the logger for chaining.
+// 向Logger中增加过滤器,传入参数为过滤器名称,级别,记录通道,返回Logger通道回来
 func (log Logger) AddFilter(name string, lvl Level, writer LogWriter) Logger {
 	log[name] = &Filter{lvl, writer}
 	return log
